@@ -55,7 +55,8 @@ the quick version" is a `##` heading (the post's own sections use `##`, and the
 companion sits above "## Release overview"). Part (c) is a bulleted list with a
 short bold label per item, as described below. Parts (d), (e), (f), and (g) are
 plain sentences/paragraphs as described below. The fixed closing block is a
-markdown blockquote, copied verbatim.
+`:::note[...]` aside block, copied verbatim, three lines including the opening
+and closing fences.
 
 **a. Opener (1-2 sentences).** Before anything else, briefly orient a genuine
 newcomer on what this page even is: every month ESPHome ships a release like this,
@@ -164,4 +165,6 @@ release. This is not something to generate or rephrase – it's a standing note,
 tied to this release's content, so treat it as literal text to copy in rather than
 something to write:
 
-> New to ESPHome? The [ESPHome Starter Kit](/starter-kit/) is the easiest way to start building your own smart home devices – no soldering, breadboarding, or coding required.
+:::note[New to ESPHome?]
+The [ESPHome Starter Kit](/starter-kit/) is the easiest way to start building your own smart home devices – no soldering, breadboarding, or coding required.
+:::

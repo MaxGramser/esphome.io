@@ -199,9 +199,11 @@ def test_generate_prompts_writes_companion_summary_txt(
     )
     assert str(generator._blog_post_path()) in companion_prompt
     assert (
-        "> New to ESPHome? The [ESPHome Starter Kit](/starter-kit/) "
-        "is the easiest way to start building your own smart home devices – no "
-        "soldering, breadboarding, or coding required."
+        ":::note[New to ESPHome?]\n"
+        "The [ESPHome Starter Kit](/starter-kit/) is the easiest way to start "
+        "building your own smart home devices – no soldering, breadboarding, or "
+        "coding required.\n"
+        ":::"
     ) in companion_prompt
 
 
@@ -391,6 +393,7 @@ def test_blog_post_template_structure() -> None:
 
     headings = re.findall(r"^#{2,3} .+$", template, re.MULTILINE)
     assert headings == [
+        "## Components added in this release",
         "## Release overview",
         "## Upgrade checklist",
         "## Thank you, contributors",
@@ -401,9 +404,10 @@ def test_blog_post_template_structure() -> None:
     ]
 
     companion_pos = template.index("{/* COMPANION_SUMMARY_START */}")
+    components_heading_pos = template.index("## Components added in this release")
     img_table_pos = template.index("<ImgTable")
     overview_pos = template.index("## Release overview")
-    assert companion_pos < img_table_pos < overview_pos
+    assert companion_pos < components_heading_pos < img_table_pos < overview_pos
 
 
 def test_main_parses_assemble_blog_only(
