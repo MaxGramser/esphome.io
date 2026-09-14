@@ -127,9 +127,10 @@ builds, the same route the ESP32 took with native ESP-IDF in 2026.7.0.
 The install phase of a PlatformIO build was serial from top to bottom, which showed up most sharply on
 Raspberry Pi class hardware and inside the Home Assistant App. This release parallelizes it end to end:
 
-- A shared batch download runner replaces 296 serial progress frames with one combined progress bar
-  ([#18662](https://github.com/esphome/esphome/pull/18662)), and when two builds want the same archive at once, the
-  waiting one shows the other's download progress instead of sitting at 0%
+- Registry library and ESP-IDF tool archives download a few at a time instead of one by one, under a single
+  combined progress bar, cutting cold-start install time
+  ([#18662](https://github.com/esphome/esphome/pull/18662)); when two builds want the same archive at once,
+  the waiting one shows the other's download progress instead of sitting at 0%
   ([#18983](https://github.com/esphome/esphome/pull/18983))
 - A prefetch subprocess resolves and downloads PlatformIO packages in parallel into PlatformIO's own cache
   ([#18769](https://github.com/esphome/esphome/pull/18769)), and the install pass extracts them with one worker per
