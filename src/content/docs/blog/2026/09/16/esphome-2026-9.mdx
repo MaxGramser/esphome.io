@@ -113,10 +113,12 @@ choice on every platform ([#18556](https://github.com/esphome/esphome/pull/18556
 installer for the Arduino ESP8266 core 3.1.2 and xtensa gcc 10.3
 ([#18557](https://github.com/esphome/esphome/pull/18557)), and a native library backend that resolves
 `cg.add_library()` entries against the framework tree
-([#18558](https://github.com/esphome/esphome/pull/18558)). The infrastructure is standalone in this release
-(nothing user reachable calls it yet), but it is the plumbing an ESP8266 build without PlatformIO needs.
-About 40% of ESPHome installs still run on ESP8266, so this is the setup work for a substantially faster
-build path for those users.
+([#18558](https://github.com/esphome/esphome/pull/18558)).
+
+Nothing user reachable calls this infrastructure yet; it is the foundation, shipped ahead so the native
+toolchain itself can land in 2026.10.0. About 40% of ESPHome installs still run on ESP8266, and building
+without PlatformIO is what makes substantially faster builds possible for them, the same path the ESP32
+took with native ESP-IDF in 2026.7.0.
 
 ## Build System Parallelization
 
