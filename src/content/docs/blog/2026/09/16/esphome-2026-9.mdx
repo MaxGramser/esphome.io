@@ -67,10 +67,11 @@ encryption costs in flash by close to half on every platform, brings Improv prov
 boards, teaches WiFi provisioning to shut down the AP and captive portal when the window closes, and rewrites
 IR transmission on the BK7238 and RTL8720C to run from a hardware timer interrupt instead of a busy-wait. The
 multi-release modbus overhaul continues with a heap-free write path, a consolidated range-join option, and
-continuous polling. Six new components (ds1603l, d01, sfa40, mk2pvrouter, snapshot, noise) and
-around twenty feature additions to existing components round out the release. The bundled Device Builder
-masks credentials in the YAML diff view, boots ESP32-C6 boards after a browser flash, and lets paired build
-servers recover from an address change on their own.
+continuous polling. A hardening pass stops the device from rebooting when the heap runs out during
+WiFi scans, stalled API writes or OTA verification. Six new components (ds1603l, d01, sfa40, mk2pvrouter,
+snapshot, noise) and around twenty feature additions to existing components round out the release. The
+bundled Device Builder masks credentials in the YAML diff view, boots ESP32-C6 boards after a browser flash,
+and lets paired build servers recover from an address change on their own.
 {/* RELEASE_OVERVIEW_END */}
 
 ## Upgrade Checklist
@@ -183,6 +184,23 @@ the camera image reader is created lazily instead of per connection
 ([#18421](https://github.com/esphome/esphome/pull/18421)), and API message-type storage widened to `uint16_t`
 without adding per-connection RAM ([#18526](https://github.com/esphome/esphome/pull/18526)).
 
+## Out-Of-Memory Hardening
+
+On ESP-IDF, C++ exceptions are disabled, so an allocation that fails when the heap is exhausted aborts and reboots the
+device instead of returning null. A sweep across the tree removes that abort from the paths a busy device
+actually hits. A WiFi scan whose results cannot be allocated is now dropped with a warning and retried instead
+of rebooting the device, and with a single configured network the ESP32 driver filters the scan by SSID and
+keeps only the strongest 12
+records, so the common case also uses the least RAM ([#19254](https://github.com/esphome/esphome/pull/19254),
+[#19253](https://github.com/esphome/esphome/pull/19253)). A stalled API write on a lossy link used to allocate and
+free about 1 KB per write; each connection now keeps one reusable overflow buffer with a capped backlog, ending the
+heap fragmentation that could take a low-heap device down during the 90 second OTA confirmation window, and encoding
+got about 8% faster along the way ([#19093](https://github.com/esphome/esphome/pull/19093)). The OTA noise session,
+auth buffer and signature block, the Nextion command queue and the W5500 SPI context all moved off aborting allocation
+paths as well, failing the operation instead of the device ([#19245](https://github.com/esphome/esphome/pull/19245),
+[#19249](https://github.com/esphome/esphome/pull/19249), [#19251](https://github.com/esphome/esphome/pull/19251),
+[#19246](https://github.com/esphome/esphome/pull/19246), [#19248](https://github.com/esphome/esphome/pull/19248)).
+
 ## ESPHome Device Builder
 
 This is a smaller cycle for the bundled [ESPHome Device Builder](https://github.com/esphome/device-builder), and
@@ -234,6 +252,16 @@ navigator per page
 triggers resolve by the instance's platform ([#2671](https://github.com/esphome/device-builder/pull/2671),
 [frontend#1720](https://github.com/esphome/device-builder-frontend/pull/1720)), and the JSON config endpoint
 serialises non-string keys ([#2660](https://github.com/esphome/device-builder/pull/2660)).
+
+The newest builds show the encryption key in the device menu for devices keyed
+through `ota: encryption:` ([#2679](https://github.com/esphome/device-builder/pull/2679),
+[frontend#1722](https://github.com/esphome/device-builder-frontend/pull/1722)), dismissing the install dialog keeps
+the compile running ([frontend#1732](https://github.com/esphome/device-builder-frontend/pull/1732)), the WiFi
+credentials dialog prefills the stored values
+([frontend#1739](https://github.com/esphome/device-builder-frontend/pull/1739)), Home Assistant adoption and its API
+key handoff got a round of hardening ([#2693](https://github.com/esphome/device-builder/pull/2693),
+[#2716](https://github.com/esphome/device-builder/pull/2716),
+[#2720](https://github.com/esphome/device-builder/pull/2720)).
 
 ## Encrypted OTA Updates
 
@@ -365,6 +393,9 @@ Six new components join the tree:
 
 - **[zigbee time platform](/components/time/zigbee/)** by [@luar123](https://github.com/luar123) adds a
   Zigbee-sourced time provider on ESP32 ([#18656](https://github.com/esphome/esphome/pull/18656))
+- **Package-relative file paths** by [@bdraco](https://github.com/bdraco): a file or directory option whose
+  config-relative path does not exist now resolves against the YAML file that declares it, so a package or
+  `!include`d file can ship its own assets next to its YAML ([#19259](https://github.com/esphome/esphome/pull/19259))
 - **[tuya water_heater](/components/water_heater/tuya/)** by
   [@iago-veiga](https://github.com/iago-veiga) exposes a Tuya-MCU electric water heater as a single
   `water_heater` entity, collapsing the previous template-plus-lambda pattern into one block
@@ -458,6 +489,13 @@ now runs from the XTAL clock, which stops the garbled stack traces the APB clock
 after a watchdog-flavoured `esp_restart()` and no longer prints an empty source
 ([#17537](https://github.com/esphome/esphome/pull/17537)).
 
+After a `ble.disable` and `ble.enable` cycle, a Bluetooth proxy
+connection slot could get stuck connecting forever and stop scanning, because an idle slot never registered with the
+new stack; every client now re-registers when the stack cycles, and an enable issued while a disable is still pending
+cancels it instead of being ignored ([#19068](https://github.com/esphome/esphome/pull/19068)). Starting an OTA while a
+proxy connection was active left the shared radio biased toward Bluetooth for the whole transfer; the preference now
+reverts to balanced when the OTA starts ([#19082](https://github.com/esphome/esphome/pull/19082)).
+
 ## ESP32 Custom eFuse MAC Applied Consistently
 
 [@kbx81](https://github.com/kbx81) fixes an inconsistency where a custom MAC burned into the ESP32's eFuses
@@ -481,30 +519,34 @@ changes.
 
 ## Other Fixes
 
-Audio on ESP32 got a round of fixes: a speaker start request that arrived while the previous task was still
-stopping is kept instead of dropped ([#19027](https://github.com/esphome/esphome/pull/19027)), the I2S driver is
-no longer started a second time while the bus lock is still held, which cost a one second delay before playback
-([#19045](https://github.com/esphome/esphome/pull/19045)), the MP3 decoder treats a mid-stream format notice as
-the recoverable status it is instead of ending playback
-([#19028](https://github.com/esphome/esphome/pull/19028)), the audio components check their buffers through a
-locked pointer or a null test instead of `use_count()`
-([#19046](https://github.com/esphome/esphome/pull/19046)), and a running `StaticTask` is suspended before its
-stack is freed, closing a use-after-free ([#19048](https://github.com/esphome/esphome/pull/19048)).
+Audio on ESP32 got a round of fixes: a speaker start request that arrived while the previous task was still stopping
+is kept instead of dropped ([#19027](https://github.com/esphome/esphome/pull/19027)), the I2S driver is no longer
+started a second time while the bus lock is still held, which cost a one second delay before playback
+([#19045](https://github.com/esphome/esphome/pull/19045)), the MP3 decoder treats a mid-stream format notice as the
+recoverable status it is instead of ending playback ([#19028](https://github.com/esphome/esphome/pull/19028)), the
+audio components check their buffers through a locked pointer or a null test instead of `use_count()`
+([#19046](https://github.com/esphome/esphome/pull/19046)), and a running `StaticTask` is suspended before its stack is
+freed, closing a use-after-free ([#19048](https://github.com/esphome/esphome/pull/19048)). The I2S speaker's state
+changes now all run on the loop thread, so a stop can cancel a start the loop has not processed yet and the speaker no
+longer wedges in a restart loop ([#19089](https://github.com/esphome/esphome/pull/19089)).
 
-Elsewhere, MQTT light discovery publishes `brightness: true` again so Home Assistant sends brightness and colour
-as separate fields instead of folding one into the other
-([#18950](https://github.com/esphome/esphome/pull/18950)), `dallas_temp` filters the 85 °C reading a
-DS18B20 returns after a reset ([#17877](https://github.com/esphome/esphome/pull/17877)), `ble_client` nodes that
-never read services now report established so the client releases its discovered services
-([#17920](https://github.com/esphome/esphome/pull/17920)), `tuya` builds without a network component
-([#18948](https://github.com/esphome/esphome/pull/18948)), the LVGL `qrcode`, `keyboard` and `tabview` widgets
-declare their label dependency ([#18387](https://github.com/esphome/esphome/pull/18387)), `rf_bridge` bucket
-sniffing works with the Portisch firmware ([#17683](https://github.com/esphome/esphome/pull/17683)), `anova`
-re-asserts the temperature unit on every poll ([#17141](https://github.com/esphome/esphome/pull/17141)),
-`atm90e32` verifies its offset calibration writes ([#18701](https://github.com/esphome/esphome/pull/18701)),
-`usb_uart` keeps working when the comm interface claim fails
-([#18968](https://github.com/esphome/esphome/pull/18968)), and the removed `udp` options moved to
-`packet_transport` no longer appear in the generated schema ([#19032](https://github.com/esphome/esphome/pull/19032)).
+Elsewhere, MQTT light discovery publishes `brightness: true` again so Home Assistant sends brightness and colour as
+separate fields instead of folding one into the other ([#18950](https://github.com/esphome/esphome/pull/18950)),
+`dallas_temp` filters the 85 °C reading a DS18B20 returns after a reset
+([#17877](https://github.com/esphome/esphome/pull/17877)), `ble_client` nodes that never read services now report
+established so the client releases its discovered services ([#17920](https://github.com/esphome/esphome/pull/17920)),
+`tuya` builds without a network component ([#18948](https://github.com/esphome/esphome/pull/18948)), the LVGL
+`qrcode`, `keyboard` and `tabview` widgets declare their label dependency
+([#18387](https://github.com/esphome/esphome/pull/18387)), `rf_bridge` bucket sniffing works with the Portisch
+firmware ([#17683](https://github.com/esphome/esphome/pull/17683)), `anova` re-asserts the temperature unit on every
+poll ([#17141](https://github.com/esphome/esphome/pull/17141)), `atm90e32` verifies its offset calibration writes
+([#18701](https://github.com/esphome/esphome/pull/18701)), `usb_uart` keeps working when the comm interface claim
+fails ([#18968](https://github.com/esphome/esphome/pull/18968)), the `template` water heater stops republishing on
+every loop iteration while a temperature lambda returns `NAN`
+([#19013](https://github.com/esphome/esphome/pull/19013)), `pmsa003i` no longer logs garbage from an uninitialized
+buffer when the I2C read fails ([#19053](https://github.com/esphome/esphome/pull/19053)), and the removed `udp`
+options moved to `packet_transport` no longer appear in the generated schema
+([#19032](https://github.com/esphome/esphome/pull/19032)).
 
 {/* FEATURE_HIGHLIGHTS_END */}
 
