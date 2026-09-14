@@ -118,9 +118,9 @@ helpers ([#18661](https://github.com/esphome/esphome/pull/18661),
 ([#18552](https://github.com/esphome/esphome/pull/18552)).
 
 Nothing user reachable calls this infrastructure yet; it is the foundation, shipped ahead so the native
-toolchain itself can land in 2026.10.0. About 40% of ESPHome installs still run on ESP8266, and building
-without PlatformIO is what makes substantially faster builds possible for them, the same path the ESP32
-took with native ESP-IDF in 2026.7.0.
+toolchain itself can land in 2026.10.0. About 40% of ESPHome installs still run on ESP8266, and a native
+build path gives ESPHome direct control over downloads, caching and incremental builds, the same route the
+ESP32 took with native ESP-IDF in 2026.7.0. PlatformIO remains fully supported and the default.
 
 ## Build System Parallelization
 
