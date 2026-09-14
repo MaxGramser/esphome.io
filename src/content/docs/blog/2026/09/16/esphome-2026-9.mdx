@@ -62,8 +62,9 @@ package phase drops from 36% of build time to 25% on CI benchmarks), and a sweep
 conditional log string literals off ESP8266 RAM into flash.
 
 Beyond the platform work, this release adds Noise (ChaCha20-Poly1305) encryption for OTA updates, cuts what
-encryption costs in flash by close to half on every platform, brings Improv provisioning to Ethernet-only
-boards, teaches WiFi provisioning to shut down the AP and captive portal when the window closes, and rewrites
+encryption costs in flash by close to half on every platform, extends Improv serial beyond WiFi so
+Ethernet-only boards can report their status and web server URL to setup tools, teaches WiFi provisioning
+to shut down the AP and captive portal when the window closes, and rewrites
 IR transmission on the BK7238 and RTL8720C to run from a hardware timer interrupt instead of a busy-wait. The
 multi-release modbus overhaul continues with a heap-free write path, a consolidated range-join option, and
 continuous polling. A hardening pass stops the device from rebooting when the heap runs out during
