@@ -290,7 +290,8 @@ configuration for `noise` itself.
 The noise-c and libsodium forks behind API and OTA encryption had only been lightly adapted for embedded
 targets. [@bdraco](https://github.com/bdraco) went through them in full, cut them by nearly half in size and
 made them faster in most cases ([#18989](https://github.com/esphome/esphome/pull/18989),
-[#19030](https://github.com/esphome/esphome/pull/19030), [#19062](https://github.com/esphome/esphome/pull/19062)).
+[#19030](https://github.com/esphome/esphome/pull/19030), [#19062](https://github.com/esphome/esphome/pull/19062),
+[#18692](https://github.com/esphome/esphome/pull/18692)).
 The ESP8266 and RP2040 now run X25519 on 13-bit limb arithmetic that needs no 64-bit products, the Ed25519
 base point table shrank from 30 KB to 12 KB on every platform, the SHA256 transform is compact on every
 platform and, on the ESP32 and RP2040, two to three times faster when cold, and on the ESP8266 the
@@ -306,7 +307,7 @@ per-connection heap:
 
 A Noise handshake drops from about 580ms to about 300ms on the ESP8266, from 63ms to 46ms on the
 ESP32 and from about 260ms to about 200ms on the Pico W; on the ESP8266 and the Pico W an encrypted API
-connect is almost entirely the handshake, so connects speed up by about the same amount. Nothing to configure.
+connect is almost entirely the handshake, so connects speed up by about the same amount.
 
 ## Improv Serial Beyond WiFi
 
