@@ -352,25 +352,23 @@ before, since its SDK snapshot lacks the PWM driver interface the interrupt chai
 The long-running modbus refactor from [@exciton](https://github.com/exciton) continues with a large batch of
 improvements:
 
-- Writer entities (switch, number, output, select) become their own persistent hub devices with a heap-free
-  write path that allocates nothing after `setup()`, and `write_lambda` gets full access to the underlying
-  device so a coil switch can drive a holding-register write ([#18082](https://github.com/esphome/esphome/pull/18082))
-- Range polling moves onto the same `PollingDevice` architecture
-  ([#18071](https://github.com/esphome/esphome/pull/18071)), saving 1,756 bytes of flash on the ESP8266 test config
-  with byte-identical RAM
-- The `register_count` and `force_new_range` keys are consolidated into a single tri-state `reuse_previous_range`
-  option that says how a sensor relates to the range built just before it
-  ([#18085](https://github.com/esphome/esphome/pull/18085)), and `custom_command` is renamed to `custom_pdu` with
-  auto-migration when the leading byte matches the controller address
-  ([#18652](https://github.com/esphome/esphome/pull/18652))
-- A new `continuous:` option on both the client actions ([#18542](https://github.com/esphome/esphome/pull/18542)) and
-  the controller ([#18080](https://github.com/esphome/esphome/pull/18080)) makes reads stream back-to-back to fill
-  idle bus time
-- Two write-path bug fixes ship as breaking changes: the switch/output write offset is now byte-accurate, previously
-  doubled ([#18787](https://github.com/esphome/esphome/pull/18787)), and a switch `write_lambda` return value now only
-  changes the value written to the device rather than the displayed state
-  ([#18788](https://github.com/esphome/esphome/pull/18788)), so an active-low relay finally displays the requested
-  state instead of the inverted one
+- **Persistent writer devices** ([#18082](https://github.com/esphome/esphome/pull/18082)): switch, number, output and
+  select writers become their own hub devices with a heap-free write path that allocates nothing after `setup()`, and
+  `write_lambda` gets full access to the underlying device so a coil switch can drive a holding-register write
+- **Unified range polling** ([#18071](https://github.com/esphome/esphome/pull/18071)): ranges move onto the same
+  `PollingDevice` architecture, saving 1,756 bytes of flash on the ESP8266 test config with no RAM change
+- **One range option** ([#18085](https://github.com/esphome/esphome/pull/18085)): `register_count` and
+  `force_new_range` are consolidated into a single tri-state `reuse_previous_range` option that says how a sensor
+  relates to the range built just before it
+- **`custom_pdu`** ([#18652](https://github.com/esphome/esphome/pull/18652)): `custom_command` is renamed to
+  `custom_pdu`, with auto-migration when the leading byte matches the controller address
+- **Continuous reads** ([#18542](https://github.com/esphome/esphome/pull/18542),
+  [#18080](https://github.com/esphome/esphome/pull/18080)): a new `continuous:` option on the client actions and the
+  controller makes reads stream back-to-back to fill idle bus time
+- **Write-path fixes, shipping as breaking changes**: the switch and output write offset is now byte-accurate where it
+  was previously doubled ([#18787](https://github.com/esphome/esphome/pull/18787)), and a switch `write_lambda` return
+  value only changes the value written to the device, so an active-low relay finally displays the requested state
+  instead of the inverted one ([#18788](https://github.com/esphome/esphome/pull/18788))
 
 Users of `custom_command`, `register_count`, `force_new_range` or `skip_updates` should review their configs.
 
