@@ -281,8 +281,8 @@ fail closed so an attacker cannot strip encryption and force a plaintext upload.
 the `api` encryption key, and a password and encryption are mutually exclusive because the key already
 authenticates the uploader. This work
 sits on top of a new shared `noise` component ([#18490](https://github.com/esphome/esphome/pull/18490)) that
-lifts the noise-c dependency, HWRNG binding, error strings, PSK context, encryption key validation and the
-handshake responder out of the api component so both api and ota can share them; there is no user
+lifts the Noise plumbing out of the api component so both api and ota share it, from the noise-c dependency
+and the hardware RNG that seeds the handshake to key validation and the responder role; there is no user
 configuration for `noise` itself.
 
 ## Smaller And Faster Encryption
