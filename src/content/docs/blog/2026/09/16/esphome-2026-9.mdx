@@ -57,7 +57,7 @@ import ImgTable from "@components/ImgTable.astro";
 
 {/* RELEASE_OVERVIEW_START */}
 ESPHome 2026.9.0 focuses on foundational build system and platform work: the scaffolding for an ESP8266
-native toolchain lands across five infrastructure PRs, PlatformIO installs are parallelized end to end (the
+native toolchain lands across eight infrastructure PRs, PlatformIO installs are parallelized end to end (the
 package phase drops from 36% of build time to 25% on CI benchmarks, and the docker image preinstall from
 ~100s to ~46s), and a sweep across 60 files pushes 211 conditional log string literals off ESP8266 RAM into
 flash.
@@ -104,16 +104,18 @@ and lets paired build servers recover from an address change on their own.
 {/* FEATURE_HIGHLIGHTS_START */}
 ## ESP8266 Native Toolchain Foundation
 
-Led by [@bdraco](https://github.com/bdraco), this release lays the entire scaffolding for building ESP8266
-firmware without PlatformIO. ESPHome now has a shared registry and download layer
-([#18570](https://github.com/esphome/esphome/pull/18570)), a linker-script surgery module and per-board build
-metadata ported from `platform-espressif8266` 4.2.1
-([#18555](https://github.com/esphome/esphome/pull/18555)), a toolchain seam that validates a `--toolchain`
-choice on every platform ([#18556](https://github.com/esphome/esphome/pull/18556)), a resumable, sha256-verified
-installer for the Arduino ESP8266 core 3.1.2 and xtensa gcc 10.3
+Led by [@bdraco](https://github.com/bdraco), this release lays the entire scaffolding for building ESP8266 firmware
+without PlatformIO. ESPHome now has a shared registry and download layer
+([#18570](https://github.com/esphome/esphome/pull/18570)), a linker-script surgery module and per-board build metadata
+ported from `platform-espressif8266` 4.2.1 ([#18555](https://github.com/esphome/esphome/pull/18555)), a toolchain seam
+that validates a `--toolchain` choice on every platform ([#18556](https://github.com/esphome/esphome/pull/18556)), a
+resumable, sha256-verified installer for the Arduino ESP8266 core 3.1.2 and xtensa gcc 10.3
 ([#18557](https://github.com/esphome/esphome/pull/18557)), and a native library backend that resolves
-`cg.add_library()` entries against the framework tree
-([#18558](https://github.com/esphome/esphome/pull/18558)).
+`cg.add_library()` entries against the framework tree ([#18558](https://github.com/esphome/esphome/pull/18558)).
+Supporting pieces came with it: the idedata and size-summary helpers and the library converter moved into shared build
+helpers ([#18661](https://github.com/esphome/esphome/pull/18661),
+[#18685](https://github.com/esphome/esphome/pull/18685)), and a rebuild now logs which source change triggered it
+([#18552](https://github.com/esphome/esphome/pull/18552)).
 
 Nothing user reachable calls this infrastructure yet; it is the foundation, shipped ahead so the native
 toolchain itself can land in 2026.10.0. About 40% of ESPHome installs still run on ESP8266, and building
